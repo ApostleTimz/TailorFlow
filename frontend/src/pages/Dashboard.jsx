@@ -97,6 +97,8 @@ export default function Dashboard() {
                       { name: 'Expenses', values: spent, color: '#2b1b14' },
                     ]}
                     formatValue={(value, i, name) => name === 'Transactions' ? `${money(value, c)} from ${trendData.transactions[i].count} transaction${trendData.transactions[i].count === 1 ? '' : 's'}` : money(value, c)}
+                    formatScale={(value) => money(value, c)}
+                    emptyMessage="No transactions or expenses recorded in this period."
                   />
                   <div className="mt-4 grid grid-cols-3 gap-3 border-t border-ivory-300 pt-4">
                     <Summary label="Received" value={money(receivedTotal, c)} />
@@ -113,6 +115,8 @@ export default function Dashboard() {
                       { name: 'Customers gained', values: trendData.customersGained, color: '#c9a275' },
                     ]}
                     formatValue={(value, i, name) => `${value} ${name === 'Orders' ? 'orders' : 'customers'}`}
+                    formatScale={(value) => `${value}`}
+                    emptyMessage="No orders or new customers in this period."
                   />
                   <div className="mt-4 grid grid-cols-2 gap-3 border-t border-ivory-300 pt-4">
                     <Summary label="Orders" value={orderTotal} />

@@ -27,11 +27,13 @@ export function ChartCard({ title, subtitle, legend, className = '', children })
 
 const barHeight = (value, max) => (value > 0 ? Math.max(4, (value / max) * 100) : 0);
 
-export function GroupedBarChart({ labels, series, formatValue, height = 176 }) {
-  const max = Math.max(1, ...series.flatMap((s) => s.values));
+export function GroupedBarChart({ labels, series, formatValue, formatScale = String, emptyMessage, height = 176 }) {
+  const peak = Math.max(0, ...series.flatMap((s) => s.values));
+  const max = Math.max(1, peak);
   const summary = series.map((s) => `${s.name}: ${s.values.map((v, i) => formatValue(v, i, s.name)).join(', ')}`).join('; ');
   return (
     <div className="mt-5" role="img" aria-label={summary}>
+      <p className="mb-1 text-xs text-charcoal/50">Scale: 0 – {formatScale(peak)}</p>
       <div className="relative" style={{ height }}>
         <div className="absolute inset-0 flex flex-col justify-between" aria-hidden="true">
           {[0, 0.25, 0.5, 0.75, 1].map((line) => <div key={line} className="border-t border-dashed border-ivory-300" />)}
@@ -57,11 +59,12 @@ export function GroupedBarChart({ labels, series, formatValue, height = 176 }) {
       <div className="mt-2 flex gap-1.5 sm:gap-3">
         {labels.map((label, i) => <span key={`${label}-${i}`} className="flex-1 text-center text-[10px] font-medium text-charcoal/60 sm:text-xs">{label}</span>)}
       </div>
+      {emptyMessage && peak === 0 && <p className="mt-3 rounded-xl border border-dashed border-ivory-300 bg-ivory/40 px-3 py-2 text-center text-xs text-charcoal/60">{emptyMessage}</p>}
     </div>
   );
 }
 
-export function LineChart({ labels, series, formatValue, height = 176 }) {
+export function LineChart({ labels, series, formatValue, formatScale = String, emptyMessage, height = 176 }) {
   const rawId = useId();
   const id = rawId.replace(/:/g, '');
   const width = 600;
@@ -69,13 +72,15 @@ export function LineChart({ labels, series, formatValue, height = 176 }) {
   const innerWidth = width - inset * 2;
   const innerHeight = height - inset * 2;
   const bottom = height - inset;
-  const max = Math.max(1, ...series.flatMap((s) => s.values));
+  const peak = Math.max(0, ...series.flatMap((s) => s.values));
+  const max = Math.max(1, peak);
   const x = (i) => inset + (i * innerWidth) / Math.max(1, labels.length - 1);
   const y = (v) => bottom - (v / max) * innerHeight;
   const summary = series.map((s) => `${s.name}: ${s.values.map((v, i) => formatValue(v, i, s.name)).join(', ')}`).join('; ');
   return (
     <div role="img" aria-label={summary}>
-      <svg viewBox={`0 0 ${width} ${height}`} className="mt-5 h-44 w-full overflow-visible">
+      <p className="mt-3 text-xs text-charcoal/50">Scale: 0 – {formatScale(peak)}</p>
+      <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-44 w-full overflow-visible">
         {[0, 0.25, 0.5, 0.75, 1].map((line) => (
           <line key={line} x1={inset} x2={width - inset} y1={bottom - line * innerHeight} y2={bottom - line * innerHeight} stroke="#ebe1cf" strokeDasharray="4 6" vectorEffect="non-scaling-stroke" />
         ))}
@@ -106,6 +111,7 @@ export function LineChart({ labels, series, formatValue, height = 176 }) {
       <div className="mt-1 flex justify-between px-1">
         {labels.map((label, i) => <span key={`${label}-${i}`} className="text-[10px] font-medium text-charcoal/60 sm:text-xs">{label}</span>)}
       </div>
+      {emptyMessage && peak === 0 && <p className="mt-3 rounded-xl border border-dashed border-ivory-300 bg-ivory/40 px-3 py-2 text-center text-xs text-charcoal/60">{emptyMessage}</p>}
     </div>
   );
 }
