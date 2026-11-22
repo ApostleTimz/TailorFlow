@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-ivory font-sans text-charcoal antialiased; }
+  h1, h2, h3 { @apply font-serif font-medium text-espresso; }
+  :focus-visible { @apply outline outline-[3px] outline-offset-2 outline-bronze; }
+}
+@layer components {
+  .input { @apply w-full rounded-xl border border-ivory-300 bg-white px-3.5 py-2.5 text-base text-charcoal placeholder:text-charcoal/40; }
+  .input[aria-invalid="true"] { @apply border-red-700; }
+  .card { @apply rounded-2xl border border-ivory-300 bg-white/70 p-5; }
+}
+@media print { header, nav, button { display: none !important; } body { background: white !important; } main { max-width: none !important; padding: 0 !important; } .card { border: 0 !important; box-shadow: none !important; } }
