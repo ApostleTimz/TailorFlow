@@ -69,6 +69,7 @@ Run the backend unit suite with `npm --prefix backend test`. It uses Node’s bu
 - Customers, search, archive/restore, and male/female measurement templates with immutable dated versions and up to three design images per version.
 - Orders with multiple garments, due dates, payments, production stages, and printable receipts (browser **Print / Save PDF**), with optional WhatsApp order confirmations.
 - Month calendar for order due dates, expense tracking, and inventory with reorder thresholds.
+- Dashboard insights with 6- and 12-month charts for transactions, expenses, orders, and customers gained.
 - Tenant-scoped records, password hashing, httpOnly cookie sessions, input validation, rate-limited auth, security headers, cross-site write blocking, and audit log.
 
 ## Before collecting customer information
