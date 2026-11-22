@@ -3,16 +3,12 @@ const { z } = require('zod');
 const { Op, QueryTypes } = require('sequelize');
 const { sequelize, Customer, Order, OrderItem, Payment } = require('../models');
 const { wrap, parse, requireAuth } = require('../middleware');
+const { trendMonths, totals, counts } = require('../lib/trends');
 
 const r = Router();
 r.use(requireAuth);
 
 const iso = (d) => d.toISOString().slice(0, 10);
-const monthKey = (d) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-const trendMonths = (count) => {
-  const now = new Date();
-  return Array.from({ length: count }, (_, i) => monthKey(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (count - 1 - i), 1))));
-};
 
 r.get('/trends', wrap(async (req, res) => {
   const { months } = parse(z.object({ months: z.enum(['6', '12']).optional() }), req.query);
@@ -37,18 +33,13 @@ r.get('/trends', wrap(async (req, res) => {
        FROM orders WHERE business_id = :b AND created_at >= :start GROUP BY 1`,
       { replacements: { b, start }, type: QueryTypes.SELECT }),
   ]);
-  const totals = (rows) => {
-    const by = new Map(rows.map((row) => [row.key, row]));
-    return keys.map((key) => {
-      const row = by.get(key);
-      return { count: Number(row?.count || 0), totalMinor: Number(row?.total || 0) };
-    });
-  };
-  const counts = (rows) => {
-    const by = new Map(rows.map((row) => [row.key, Number(row.count)]));
-    return keys.map((key) => by.get(key) || 0);
-  };
-  res.json({ months: keys, transactions: totals(payments), expenses: totals(expenses), customersGained: counts(customers), orders: totals(orders) });
+  res.json({
+    months: keys,
+    transactions: totals(keys, payments),
+    expenses: totals(keys, expenses),
+    customersGained: counts(keys, customers),
+    orders: totals(keys, orders),
+  });
 }));
 
 r.get('/', wrap(async (req, res) => {
