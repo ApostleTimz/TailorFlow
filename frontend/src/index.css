@@ -13,4 +13,4 @@
   .input[aria-invalid="true"] { @apply border-red-700; }
   .card { @apply rounded-2xl border border-ivory-300 bg-white/70 p-5; }
 }
-@media print { header, nav, button { display: none !important; } body { background: white !important; } main { max-width: none !important; padding: 0 !important; } .card { border: 0 !important; box-shadow: none !important; } }
+@media print { header, nav, aside, button { display: none !important; } body { background: white !important; } .shell { padding-left: 0 !important; } main { max-width: none !important; padding: 0 !important; } .card { border: 0 !important; box-shadow: none !important; } }
