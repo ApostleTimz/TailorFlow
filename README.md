@@ -53,6 +53,12 @@ Sessions use HS256 JWTs with issuer/audience claims, no hardcoded fallback secre
 
 Production requires `NODE_ENV=production`, a strong random `JWT_SECRET`, an HTTPS `APP_URL`, and database TLS with certificate verification (set `DATABASE_SSL_CA` if you use a private CA). A missing or weak secret, invalid `APP_URL`, or invalid `TRUST_PROXY` stops startup. Local development generates an ephemeral secret when `JWT_SECRET` is unset, so sessions are invalidated on restart.
 
+## Aiven PostgreSQL setup
+
+Download the project CA certificate from the Aiven service overview and save it as `backend/certs/aiven-ca.pem`. Set `DATABASE_SSL=true` and `DATABASE_SSL_CA=certs/aiven-ca.pem`; keep `sslmode` out of `DATABASE_URL` so the Node client uses the configured CA instead of overriding it.
+
+For a fresh database, run the backend once with `DB_SYNC=true` to create base tables, then set `DB_SYNC=false` permanently. Migrations are tracked in `schema_migrations` and run automatically on startup; reruns only apply migrations that have not been recorded.
+
 ## Deployment (single service)
 
 `npm run install:all && npm run build && npm start` serves the API and built site from one Express process. Or use the included `Dockerfile`.
