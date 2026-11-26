@@ -70,10 +70,15 @@ r.post('/login', wrap(async (req, res) => {
   res.cookie('tf_token', signToken(user), cookieOpts).json(me(user));
 }));
 
+const emailSchema = z.string().trim().toLowerCase().email('Enter a valid email address.').max(254);
+
 r.post('/verify-email', wrap(async (req, res) => {
-  const { token } = parse(z.object({ token: z.string().min(20).max(200) }), req.body);
-  const user = await findByToken(token, PURPOSES.verify);
-  if (!user) throw new HttpError(400, 'That verification link is invalid or has expired.');
+  const { email, code } = parse(z.object({ email: emailSchema, code: z.string().trim().regex(/^\d{6}$/, 'Enter the 6-digit code.') }), req.body);
+  const user = await User.findOne({ where: { email } });
+  if (!user) throw new HttpError(400, 'That verification code is invalid or has expired. Request a new code and try again.');
+  if (user.emailVerifiedAt) return res.json({ message: 'Email is already verified. You can now sign in.' });
+  const valid = user.tokenHash && user.tokenPurpose === PURPOSES.verify && user.tokenExpiresAt && user.tokenExpiresAt > new Date() && tokenHash(code) === user.tokenHash;
+  if (!valid) throw new HttpError(400, 'That verification code is invalid or has expired. Request a new code and try again.');
   await user.update({ emailVerifiedAt: new Date(), tokenHash: null, tokenExpiresAt: null, tokenPurpose: null });
   await auditEvent(req, 'auth.verify_email', { userId: user.id, businessId: user.businessId, entity: 'user', entityId: user.id });
   res.json({ message: 'Email verified. You can now sign in.' });
