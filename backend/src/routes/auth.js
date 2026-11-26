@@ -64,7 +64,8 @@ r.post('/login', wrap(async (req, res) => {
   const d = parse(loginSchema, req.body);
   const user = await User.findOne({ where: { email: d.email }, include: [{ model: Business }] });
   const ok = await bcrypt.compare(d.password, user ? user.passwordHash : DUMMY);
-  if (!user || !ok || (emailVerificationRequired() && !user.emailVerifiedAt)) throw new HttpError(401, 'Email or password is incorrect.');
+  if (!user || !ok) throw new HttpError(401, 'Email or password is incorrect.');
+  if (emailVerificationRequired() && !user.emailVerifiedAt) throw new HttpError(403, 'Enter the 6-digit code we emailed you before signing in.');
   await auditEvent(req, 'auth.login', { userId: user.id, businessId: user.businessId, entity: 'user', entityId: user.id });
   res.cookie('tf_token', signToken(user), cookieOpts).json(me(user));
 }));
