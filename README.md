@@ -21,9 +21,9 @@ Tables are created automatically for the initial launch. Database changes are al
 
 ## Email setup
 
-Set `APP_URL` to the public app origin. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` for verification and password reset emails. Local development without SMTP prints the one-time links to the backend terminal. Production fails account email requests if SMTP is not configured. Verification and reset links expire after one hour.
+Set `APP_URL` to the public app origin. Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD` and `EMAIL_FROM` for verification and password reset emails. Local development without SMTP prints the verification code and reset links to the backend terminal. Production fails account email requests if SMTP is not configured. Verification codes expire after 10 minutes; reset links expire after one hour.
 
-Registration creates the business owner. Production always requires email verification before sign-in. Local development skips verification by default so you can use the app without an email provider; set `REQUIRE_EMAIL_VERIFICATION=true` to exercise the email flow locally (links are printed in the backend terminal when SMTP is unset). The owner can create staff accounts from **Staff**; staff accounts belong to that owner’s business and share its scoped customer/order workspace. Set an initial password and deliver it to staff securely.
+Registration creates the business owner. Production always requires email verification before sign-in. Local development also requires verification by default; set `REQUIRE_EMAIL_VERIFICATION=false` to skip it locally. New owners receive a 6-digit code by email and must enter it before signing in; the code is printed in the backend terminal when SMTP is unset. The owner can create staff accounts from **Staff**; staff accounts belong to that owner’s business and share its scoped customer/order workspace. Set an initial password and deliver it to staff securely.
 
 ## WhatsApp order notifications
 
