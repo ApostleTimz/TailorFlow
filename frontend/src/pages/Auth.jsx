@@ -99,6 +99,22 @@ function useSubmit(fn) {
   return { error, busy, submit };
 }
 
+const EyeIcon = ({ hidden }) => hidden
+  ? <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="m3 3 18 18" strokeLinecap="round" /><path d="M10.6 6.1A10.9 10.9 0 0 1 12 6c6 0 9.5 6 9.5 6a17.4 17.4 0 0 1-2.1 2.7M6.2 6.2C3.8 8 2.5 12 2.5 12s3.5 6 9.5 6c1.6 0 3-.4 4.2-1.1" strokeLinecap="round" strokeLinejoin="round" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" strokeLinecap="round" /></svg>
+  : <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="2.75" /></svg>;
+
+function PasswordField({ label, error, hint, className = '', ...props }) {
+  const [visible, setVisible] = useState(false);
+  return <Field label={label} error={error} hint={hint}>
+    <div className="relative">
+      <input {...props} className={`input pr-12 ${className}`} type={visible ? 'text' : 'password'} />
+      <button type="button" onClick={() => setVisible((v) => !v)} aria-label={visible ? 'Hide password' : 'Show password'} aria-pressed={visible} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-charcoal/60 transition-colors hover:text-espresso focus:outline-none focus:ring-2 focus:ring-inset focus:ring-bronze">
+        <EyeIcon hidden={visible} />
+      </button>
+    </div>
+  </Field>;
+}
+
 export function Login() {
   const { login, session } = useAuth();
   const nav = useNavigate();
@@ -108,7 +124,7 @@ export function Login() {
     <Shell showcase={SHOWCASE.login} title="Welcome back" sub="Sign in to your tailoring business." foot={<>New here? <Link className="font-semibold text-bronze-700 underline" to="/register">Create an account</Link></>}>
       <form onSubmit={submit} className="grid gap-4" noValidate>
         <Field label="Email address" error={error?.fields?.email}><input className="input" name="email" type="email" autoComplete="email" required /></Field>
-        <Field label="Password" error={error?.fields?.password}><input className="input" name="password" type="password" autoComplete="current-password" required /></Field>
+        <PasswordField label="Password" error={error?.fields?.password} name="password" autoComplete="current-password" required />
         <Link className="text-sm font-semibold text-bronze-700 underline" to="/forgot-password">Forgot your password?</Link>
         {error && !Object.keys(error.fields).length && <ErrorNote error={error} />}
         <Button disabled={busy}>{busy ? 'Signing in...' : 'Sign in'}</Button>
@@ -133,7 +149,7 @@ export function Register() {
         <Field label="Business name" error={f.businessName}><input className="input" name="businessName" autoComplete="organization" required /></Field>
         <Field label="Your name" error={f.name}><input className="input" name="name" autoComplete="name" required /></Field>
         <Field label="Email address" error={f.email}><input className="input" name="email" type="email" autoComplete="email" required /></Field>
-        <Field label="Password" error={f.password} hint="At least 8 characters."><input className="input" name="password" type="password" autoComplete="new-password" required /></Field>
+        <PasswordField label="Password" error={f.password} hint="At least 8 characters." name="password" autoComplete="new-password" required />
         <Field label="Currency for prices and payments" error={f.currency}><select className="input" name="currency" defaultValue="NGN">{CURRENCIES.map(([c, l]) => <option key={c} value={c}>{l}</option>)}</select></Field>
         {error && !Object.keys(f).length && <ErrorNote error={error} />}
         <Button disabled={busy}>{busy ? 'Creating account...' : 'Create account'}</Button>
