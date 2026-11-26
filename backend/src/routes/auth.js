@@ -6,22 +6,28 @@ const { sequelize, Business, User } = require('../models');
 const { HttpError, wrap, parse, requireAuth, signToken, auditEvent } = require('../middleware');
 const { config } = require('../lib/config');
 const { passwordSchema } = require('../lib/validation');
-const { createToken, tokenHash } = require('../lib/tokens');
-const { sendAccountEmail } = require('../lib/email');
+const { createToken, createVerificationCode, tokenHash } = require('../lib/tokens');
+const { sendAccountEmail, sendVerificationCode } = require('../lib/email');
 
 const r = Router();
 const CURRENCIES = ['NGN', 'USD', 'GBP', 'EUR', 'GHS', 'KES', 'ZAR', 'CAD', 'AUD'];
 const PURPOSES = { verify: 'verify_email', reset: 'password_reset' };
+const VERIFICATION_CODE_TTL_MS = 10 * 60 * 1000;
 const cookieOpts = { httpOnly: true, sameSite: 'strict', secure: config.production, maxAge: 7 * 24 * 3600 * 1000, path: '/' };
 const DUMMY = bcrypt.hashSync('not-a-real-password', 10);
 
 const me = (u) => ({ user: { id: u.id, name: u.name, email: u.email, role: u.role }, business: { id: u.Business.id, name: u.Business.name, currency: u.Business.currency } });
 const webBase = () => config.appOrigin;
-const emailVerificationRequired = () => config.production || process.env.REQUIRE_EMAIL_VERIFICATION === 'true';
+const emailVerificationRequired = () => config.production || process.env.REQUIRE_EMAIL_VERIFICATION !== 'false';
 const issueToken = async (user, purpose) => {
   const token = createToken();
   await user.update({ tokenHash: tokenHash(token), tokenExpiresAt: new Date(Date.now() + 3600000), tokenPurpose: purpose });
   return token;
+};
+const sendVerificationEmail = async (user) => {
+  const code = createVerificationCode();
+  await user.update({ tokenHash: tokenHash(code), tokenExpiresAt: new Date(Date.now() + VERIFICATION_CODE_TTL_MS), tokenPurpose: PURPOSES.verify });
+  await sendVerificationCode(user.email, code);
 };
 const findByToken = (token, purpose) => User.findOne({ where: {
   tokenHash: tokenHash(token), tokenPurpose: purpose, tokenExpiresAt: { [Op.gt]: new Date() },
@@ -48,9 +54,8 @@ r.post('/register', wrap(async (req, res) => {
     await user.update({ emailVerifiedAt: new Date() });
     return res.status(201).json({ message: 'Account created. You can sign in now.', emailVerified: true });
   }
-  const token = await issueToken(user, PURPOSES.verify);
-  await sendAccountEmail(user.email, 'Verify your TailorFlow email', `${webBase()}/verify-email?token=${token}`);
-  res.status(201).json({ message: 'Check your email for a verification link before signing in.', emailVerified: false });
+  await sendVerificationEmail(user);
+  res.status(201).json({ message: 'Check your email for a 6-digit verification code before signing in.', emailVerified: false });
 }));
 
 const loginSchema = z.object({ email: z.string().trim().toLowerCase().email('Enter a valid email address.'), password: z.string().min(1, 'Enter your password.') });
