@@ -4,7 +4,7 @@ import { Link, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'rea
 import { useAuth } from './auth.jsx';
 import { Spinner } from './ui.jsx';
 import Landing from './pages/Landing.jsx';
-import { Login, Register, AccountAction } from './pages/Auth.jsx';
+import { Login, Register, VerifyEmail, AccountAction } from './pages/Auth.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Customers from './pages/Customers.jsx';
 import CustomerDetail from './pages/CustomerDetail.jsx';
@@ -85,7 +85,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<AccountAction mode="forgot" />} />
       <Route path="/reset-password" element={<AccountAction mode="reset" />} />
-      <Route path="/verify-email" element={<AccountAction mode="verify" />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/privacy" element={<Legal kind="privacy" />} />
       <Route path="/terms" element={<Legal kind="terms" />} />
       <Route path="/app" element={<Protected />}>

@@ -31,7 +31,7 @@ const SHOWCASE = {
     eyebrow: 'Account security',
     headline: 'Your work stays yours.',
     copy: 'A few quick steps keep your business details safe and get you back into your workshop.',
-    points: ['Links expire after one hour', 'One-time use for every reset', 'Back to your dashboard in moments'],
+    points: ['Short-lived codes and links', 'One-time use for every reset', 'Back to your dashboard in moments'],
   },
 };
 
@@ -118,7 +118,13 @@ function PasswordField({ label, error, hint, className = '', ...props }) {
 export function Login() {
   const { login, session } = useAuth();
   const nav = useNavigate();
-  const { error, busy, submit } = useSubmit(async (d) => { await login(d); nav('/app'); });
+  const { error, busy, submit } = useSubmit(async (d) => {
+    try { await login(d); nav('/app'); }
+    catch (err) {
+      if (err.status === 403) { nav(`/verify-email?email=${encodeURIComponent(d.email)}`, { replace: true }); return; }
+      throw err;
+    }
+  });
   if (session) return <Navigate to="/app" replace />;
   return (
     <Shell showcase={SHOWCASE.login} title="Welcome back" sub="Sign in to your tailoring business." foot={<>New here? <Link className="font-semibold text-bronze-700 underline" to="/register">Create an account</Link></>}>
@@ -139,7 +145,7 @@ export function Register() {
   const { error, busy, submit } = useSubmit(async (d) => {
     const result = await register(d);
     if (result.emailVerified) { await login({ email: d.email, password: d.password }); nav('/app'); }
-    else nav('/verify-email?sent=1');
+    else nav(`/verify-email?email=${encodeURIComponent(d.email)}&sent=1`);
   });
   if (session) return <Navigate to="/app" replace />;
   const f = error?.fields || {};
@@ -158,21 +164,56 @@ export function Register() {
   );
 }
 
-export function AccountAction({ mode }) {
+export function VerifyEmail() {
   const params = new URLSearchParams(window.location.search);
-  const token = params.get('token');
-  const [message, setMessage] = useState(mode === 'verify' && !token ? (params.get('sent') ? 'Check your inbox for a verification link.' : 'Use the verification link from your email.') : '');
+  const initialEmail = params.get('email') || '';
+  const [email, setEmail] = useState(initialEmail);
+  const [message, setMessage] = useState(params.get('sent') === '1' ? `We emailed a 6-digit code to ${initialEmail || 'your email address'}.` : '');
+  const [verified, setVerified] = useState(false);
+  const [resendError, setResendError] = useState(null);
+  const [resendBusy, setResendBusy] = useState(false);
   const { error, busy, submit } = useSubmit(async (d) => {
-    if (mode === 'verify') { const r = await api('/auth/verify-email', { method: 'POST', body: { token } }); setMessage(r.message); }
-    else { const r = await api(mode === 'forgot' ? '/auth/forgot-password' : '/auth/reset-password', { method: 'POST', body: mode === 'forgot' ? d : { ...d, token } }); setMessage(r.message); }
+    const r = await api('/auth/verify-email', { method: 'POST', body: { email: d.email, code: d.code } });
+    setMessage(r.message);
+    setVerified(true);
   });
-  const title = mode === 'forgot' ? 'Reset your password' : mode === 'reset' ? 'Choose a new password' : 'Verify your email';
-  return <Shell title={title} sub="TailorFlow account security." foot={<Link className="font-semibold text-bronze-700 underline" to="/login">Back to sign in</Link>}>
-    {message && <p className="mb-4 rounded-xl bg-green-50 p-3 text-green-900">{params.get('sent') ? 'Check your inbox for a verification link.' : message}</p>}
-    {mode !== 'verify' && <form onSubmit={submit} className="grid gap-4" noValidate>
-      {mode === 'forgot' ? <Field label="Email address"><input className="input" name="email" type="email" required /></Field> : <Field label="New password" hint="At least 8 characters."><input className="input" name="password" type="password" minLength="8" required /></Field>}
-      {error && <ErrorNote error={error} />}<Button disabled={busy}>{busy ? 'Please wait...' : mode === 'forgot' ? 'Send reset link' : 'Reset password'}</Button>
+  const resend = async () => {
+    if (!email.trim()) { setResendError(new Error('Enter your email address first.')); return; }
+    setResendBusy(true); setResendError(null);
+    try {
+      const r = await api('/auth/resend-verification', { method: 'POST', body: { email } });
+      setMessage(r.message);
+    } catch (err) { setResendError(err); }
+    finally { setResendBusy(false); }
+  };
+  const f = error?.fields || {};
+  return <Shell title={verified ? 'Email verified' : 'Verify your email'} sub="Enter the 6-digit code we sent to your email." foot={<Link className="font-semibold text-bronze-700 underline" to="/login">Back to sign in</Link>}>
+    {message && <p className="mb-4 rounded-xl bg-green-50 p-3 text-green-900" role="status">{message}</p>}
+    {!verified && <form onSubmit={submit} className="grid gap-4" noValidate>
+      <Field label="Email address" error={f.email}><input className="input" name="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></Field>
+      <Field label="6-digit code" error={f.code} hint="The code expires in 10 minutes."><input className="input" name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength="6" required /></Field>
+      {error && !Object.keys(f).length && <ErrorNote error={error} />}
+      <Button disabled={busy}>{busy ? 'Verifying...' : 'Verify email'}</Button>
+      <button type="button" onClick={resend} disabled={resendBusy} className="text-sm font-semibold text-bronze-700 underline disabled:opacity-60">{resendBusy ? 'Sending new code...' : 'Resend code'}</button>
+      {resendError && <ErrorNote error={resendError} />}
     </form>}
-    {mode === 'verify' && token && <form onSubmit={submit}><ErrorNote error={error}/><Button disabled={busy}>{busy ? 'Verifying...' : 'Verify email'}</Button></form>}
+    {verified && <Link className="font-semibold text-bronze-700 underline" to="/login">Continue to sign in</Link>}
+  </Shell>;
+}
+
+export function AccountAction({ mode }) {
+  const token = new URLSearchParams(window.location.search).get('token');
+  const [message, setMessage] = useState('');
+  const { error, busy, submit } = useSubmit(async (d) => {
+    const r = await api(mode === 'forgot' ? '/auth/forgot-password' : '/auth/reset-password', { method: 'POST', body: mode === 'forgot' ? d : { ...d, token } });
+    setMessage(r.message);
+  });
+  const title = mode === 'forgot' ? 'Reset your password' : 'Choose a new password';
+  return <Shell title={title} sub="TailorFlow account security." foot={<Link className="font-semibold text-bronze-700 underline" to="/login">Back to sign in</Link>}>
+    {message && <p className="mb-4 rounded-xl bg-green-50 p-3 text-green-900">{message}</p>}
+    <form onSubmit={submit} className="grid gap-4" noValidate>
+      {mode === 'forgot' ? <Field label="Email address"><input className="input" name="email" type="email" required /></Field> : <PasswordField label="New password" hint="At least 8 characters." name="password" autoComplete="new-password" minLength="8" required />}
+      {error && <ErrorNote error={error} />}<Button disabled={busy}>{busy ? 'Please wait...' : mode === 'forgot' ? 'Send reset link' : 'Reset password'}</Button>
+    </form>
   </Shell>;
 }
