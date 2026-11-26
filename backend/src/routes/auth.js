@@ -84,6 +84,16 @@ r.post('/verify-email', wrap(async (req, res) => {
   res.json({ message: 'Email verified. You can now sign in.' });
 }));
 
+r.post('/resend-verification', wrap(async (req, res) => {
+  const { email } = parse(z.object({ email: emailSchema }), req.body);
+  const user = await User.findOne({ where: { email } });
+  if (user && emailVerificationRequired() && !user.emailVerifiedAt) {
+    await sendVerificationEmail(user);
+    await auditEvent(req, 'auth.verification_resent', { userId: user.id, businessId: user.businessId, entity: 'user', entityId: user.id });
+  }
+  res.json({ message: 'If that email needs verification, a new 6-digit code is on its way.' });
+}));
+
 r.post('/forgot-password', wrap(async (req, res) => {
   const { email } = parse(z.object({ email: z.string().trim().toLowerCase().email().max(254) }), req.body);
   const user = await User.findOne({ where: { email } });

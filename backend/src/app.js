@@ -40,6 +40,7 @@ app.use('/api/auth/register', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/verify-email', authLimiter);
+app.use('/api/auth/resend-verification', authLimiter);
 const { uploadRouter, designRouter } = require('./routes/designs');
 app.use('/api/measurements', express.json({ limit: '10mb', strict: true }), uploadRouter);
 app.use('/api/designs', designRouter);
