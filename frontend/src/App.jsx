@@ -65,9 +65,9 @@ function Shell() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
   return (
-    <div className="shell min-h-screen pb-24 md:pb-0 md:pl-72">
+    <div className="shell min-h-screen pt-16 md:pt-0 md:pl-72">
       <Sidebar links={links} business={business} user={user} logout={logout} open={navOpen} onClose={closeNav} />
-      <button type="button" onClick={() => setNavOpen(true)} className="fixed bottom-5 left-5 z-20 inline-flex items-center gap-2 rounded-full bg-espresso px-4 py-3 text-sm font-semibold text-ivory shadow-lg md:hidden" aria-label="Open navigation" aria-expanded={navOpen}>
+      <button type="button" onClick={() => setNavOpen(true)} className="fixed left-5 top-5 z-20 inline-flex items-center gap-2 rounded-full bg-espresso px-4 py-3 text-sm font-semibold text-ivory shadow-lg md:hidden" aria-label="Open navigation" aria-expanded={navOpen}>
         <MenuIcon /> Menu
       </button>
       <main className="mx-auto max-w-6xl px-4 py-8 md:py-10">
